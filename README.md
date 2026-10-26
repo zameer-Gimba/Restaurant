@@ -35,6 +35,13 @@ There is no server code. Both pages talk directly to Firebase:
 
 `npm run serve` uses the **live** database, so orders placed while previewing are real orders.
 
+## Automatic publishing
+
+Every change pushed to the `main` branch on GitHub is published to the live site automatically
+(see `.github/workflows/deploy.yml`; progress is shown in the repo's **Actions** tab).
+This needs a one-time GitHub secret named `FIREBASE_SERVICE_ACCOUNT` containing a Firebase
+service account key (Firebase console → Project settings → Service accounts → Generate new private key).
+
 ## Security rules
 
 `firestore.rules` allows:
