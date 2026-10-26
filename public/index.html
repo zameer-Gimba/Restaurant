@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#e65100">
+  <title>E.M Restaurant — Order Online</title>
+  <style>
+    :root {
+      --primary:#e65100; --primary-hover:#bf360c; --green:#2e7d32;
+      --bg:#f4f5f7; --card:#fff; --text:#212121; --muted:#666;
+      --border:#e0e0e0; --shadow:0 4px 12px rgba(0,0,0,.07);
+      --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font)}
+    header{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--border);
+      padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 2px 5px #00000008}
+    .brand{display:flex;align-items:center;gap:10px;color:var(--primary);font-weight:800;font-size:1.3rem}
+    .brand svg{fill:currentColor;flex-shrink:0}
+    .open-badge{background:#e8f5e9;color:var(--green);padding:8px 12px;border-radius:24px;font-weight:700;font-size:.85rem}
+    main{width:min(1200px,100%);margin:auto;padding:20px 16px 40px}
+    .intro{margin:6px 0 18px}
+    .intro h1{font-size:1.55rem;margin:0 0 6px}
+    .intro p{color:var(--muted);margin:0}
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}
+    .toolbar input,.toolbar select{min-width:0;flex:1;padding:12px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:1rem}
+    .category-nav{display:flex;gap:8px;overflow-x:auto;padding:3px 0 12px;margin-bottom:8px}
+    .category-chip{white-space:nowrap;border:1px solid var(--border);border-radius:22px;padding:8px 13px;background:#fff;cursor:pointer}
+    .category-chip.active{background:var(--primary);border-color:var(--primary);color:#fff}
+    .category-title{font-size:1.2rem;margin:20px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--primary);display:inline-block}
+    .menu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
+    .food-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column}
+    .food-img{width:100%;height:170px;object-fit:cover;background:#eee}
+    .food-img-placeholder{height:170px;display:grid;place-items:center;background:#fff3e0;font-size:3rem}
+    .food-info{padding:14px;display:flex;flex-direction:column;flex:1}
+    .food-title{font-weight:750;font-size:1.03rem;line-height:1.35}
+    .food-desc{color:var(--muted);font-size:.88rem;line-height:1.4;margin:8px 0 12px}
+    .food-bottom{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:auto}
+    .food-price{color:var(--green);font-size:1.08rem;font-weight:800}
+    button{font:inherit}
+    .add-btn,.order-btn{border:0;border-radius:7px;background:var(--primary);color:#fff;padding:10px 14px;font-weight:750;cursor:pointer}
+    .add-btn:hover{background:var(--primary-hover)}
+    button:disabled{opacity:.6;cursor:not-allowed}
+    .cart-summary{background:#fff;padding:20px;border-radius:12px;border:1px solid var(--border);box-shadow:var(--shadow);margin-top:32px}
+    .cart-summary h2{font-size:1.25rem;margin:0}
+    .cart-items{margin:12px 0;max-height:280px;overflow:auto}
+    .empty{color:var(--muted);padding:14px 0}
+    .cart-item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #eee}
+    .cart-item-name{font-weight:650}
+    .cart-item small{display:block;color:var(--muted);margin-top:4px}
+    .qty-controls{display:flex;align-items:center;gap:8px;flex-shrink:0}
+    .qty-controls button{min-width:32px;height:32px;border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer}
+    .price-breakdown{border-top:1px dashed #ccc;padding-top:12px;margin-top:12px}
+    .price-row{display:flex;justify-content:space-between;gap:12px;margin:8px 0}
+    .total-row{font-size:1.15rem;font-weight:800;color:var(--green)}
+    .checkout-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:20px}
+    .checkout-form input,.checkout-form select{width:100%;min-width:0;padding:13px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:1rem}
+    .checkout-form input:focus,.checkout-form select:focus{outline:2px solid #ffccbc;border-color:var(--primary)}
+    .order-btn{grid-column:1/-1;background:var(--green);padding:15px;font-size:1.05rem}
+    .order-btn:hover{background:#1b5e20}
+    .message{display:none;margin-top:14px;padding:12px;border-radius:8px;line-height:1.45}
+    .message.error{display:block;background:#ffebee;color:#b71c1c}
+    .message.success{display:block;background:#e8f5e9;color:#1b5e20}
+    .tracker-card{display:none;background:#e8f5e9;padding:18px;border-radius:10px;border:1px solid #a5d6a7;margin-top:18px}
+    .status-steps{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+    .step{padding:7px 10px;border-radius:20px;background:#bbb;color:#fff;font-size:.8rem;font-weight:750}
+    .step.active{background:var(--green)}
+    .loading,.empty-menu{padding:22px;background:#fff;border:1px solid var(--border);border-radius:10px;color:var(--muted)}
+    footer{text-align:center;color:var(--muted);font-size:.85rem;padding:20px}
+    @media(max-width:600px){
+      header{padding:12px}
+      .brand{font-size:1.12rem}
+      .open-badge{font-size:.76rem;padding:7px 9px}
+      main{padding:16px 12px 30px}
+      .checkout-form{grid-template-columns:1fr}
+      .menu-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+      .food-img,.food-img-placeholder{height:125px}
+      .food-info{padding:10px}
+      .food-title{font-size:.94rem}
+      .food-desc{font-size:.8rem}
+      .food-bottom{align-items:flex-start;flex-direction:column}
+      .add-btn{width:100%}
+      .cart-summary{padding:15px}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.43 3.91 3.37 4.44V22h2.26v-8.56C10.57 12.91 12 11.12 12 9V2h-1v7z"/></svg>
+      <span id="restaurantName">E.M Restaurant</span>
+    </div>
+    <div class="open-badge" id="openBadge">🟢 Open for Orders</div>
+  </header>
+
+  <main>
+    <section class="intro">
+      <h1>Order Your Favorite Meal</h1>
+      <p>Choose your meals, review your cart, and place your order.</p>
+    </section>
+
+    <div class="toolbar">
+      <input id="searchInput" type="search" placeholder="Search meals..." aria-label="Search meals">
+      <select id="sortSelect" aria-label="Sort menu">
+        <option value="default">Sort: Recommended</option>
+        <option value="low">Price: Low to high</option>
+        <option value="high">Price: High to low</option>
+        <option value="az">Name: A to Z</option>
+      </select>
+    </div>
+
+    <nav class="category-nav" id="categoryNav" aria-label="Food categories">
+      <button class="category-chip active" data-category="all" type="button">All items</button>
+    </nav>
+
+    <div id="menuStatus" class="loading">Loading menu from E.M Restaurant...</div>
+    <div id="menuSections"></div>
+
+    <section class="cart-summary" id="cartSection">
+      <h2>Your Order Cart</h2>
+      <div id="cartItems" class="cart-items"><p class="empty">Your cart is empty. Add items from the menu above.</p></div>
+      <div class="price-breakdown">
+        <div class="price-row"><span>Subtotal:</span><span id="cartSubtotal">₦0.00</span></div>
+        <div class="price-row"><span>Delivery Fee:</span><span id="deliveryFee">₦0.00</span></div>
+        <div class="price-row total-row"><span>Total Amount:</span><span id="cartTotal">₦0.00</span></div>
+      </div>
+
+      <form class="checkout-form" id="orderForm">
+        <input type="text" id="customerName" placeholder="Full Name" autocomplete="name" required>
+        <input type="tel" id="customerPhone" placeholder="Phone Number (e.g., 08012345678)" autocomplete="tel" required>
+        <select id="orderType" required>
+          <option value="TAKE AWAY">Take Away (No Fee)</option>
+          <option value="DELIVERY">Delivery (+₦1,000 Delivery Fee)</option>
+          <option value="DINE IN">Dine In (No Fee)</option>
+        </select>
+        <select id="payMode" required>
+          <option value="Pay mode paylater">Pay Later (Cash on Pick-up/Delivery)</option>
+          <option value="Paid Online">Paid Online</option>
+        </select>
+        <input type="text" id="customerNotes" placeholder="Delivery Address or Table Number" required>
+        <button type="submit" class="order-btn" id="submitBtn">Place Order Now</button>
+      </form>
+      <div id="formMessage" class="message" role="status" aria-live="polite"></div>
+
+      <div id="trackerCard" class="tracker-card">
+        <h3 id="trackerOrderId">Order Tracker</h3>
+        <p style="margin-top:6px;color:#555">Your order has been submitted to E.M Restaurant.</p>
+        <div class="status-steps">
+          <div id="step-pending" class="step active">1. Pending</div>
+          <div id="step-accepted" class="step">2. Preparing</div>
+          <div id="step-done" class="step">3. Ready / Delivered</div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer>© <span id="footerRestaurantName">E.M Restaurant</span></footer>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script>
+    // Keep this Firebase project configuration aligned with the Quickzu dashboard.
+    const firebaseConfig = {
+      apiKey: "AIzaSyCTBS0iIHqo1SaF8482oQepvVAu2ReSs7w",
+      authDomain: "quickzu-app.firebaseapp.com",
+      projectId: "quickzu-app",
+      storageBucket: "quickzu-app.firebasestorage.app",
+      messagingSenderId: "459582558032",
+      appId: "1:459582558032:web:a6638cb82701049a03e655",
+      measurementId: "G-5H1Y50TWL2"
+    };
+
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const menuSections = document.getElementById('menuSections');
+    const menuStatus = document.getElementById('menuStatus');
+    const categoryNav = document.getElementById('categoryNav');
+    const cartItemsEl = document.getElementById('cartItems');
+    const messageEl = document.getElementById('formMessage');
+
+    let products = [];
+    let categories = [];
+    let cart = [];
+    let currentFee = 0;
+    let selectedCategory = 'all';
+    let unsubscribeOrder = null;
+    let currencySymbol = '₦';
+
+    const money = amount => currencySymbol + Number(amount || 0).toLocaleString('en-NG', {
+      minimumFractionDigits: 2, maximumFractionDigits: 2
+    });
+
+    function safeText(value) {
+      return String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({
+        '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+      })[ch]);
+    }
+
+    function normaliseCategory(value) {
+      if (value == null || value === '') return 'Uncategorised';
+      if (typeof value === 'string') return value;
+      if (typeof value === 'object') return value.name || value.id || 'Uncategorised';
+      return String(value);
+    }
+
+    function categoryForProduct(product) {
+      const raw = product.categoryName || product.category || product.categoryId || product.categoryID;
+      if (raw && typeof raw === 'object') return raw.name || raw.id || 'Uncategorised';
+      const value = normaliseCategory(raw);
+      const match = categories.find(c => c.id === value || c.name === value);
+      return match ? match.name : value;
+    }
+
+    function renderCategoryButtons() {
+      const names = [...new Set(products.map(categoryForProduct))].sort((a,b) => a.localeCompare(b));
+      categoryNav.innerHTML = `<button class="category-chip ${selectedCategory === 'all' ? 'active' : ''}" data-category="all" type="button">All items</button>` +
+        names.map(name => `<button class="category-chip ${selectedCategory === name ? 'active' : ''}" data-category="${safeText(name)}" type="button">${safeText(name)}</button>`).join('');
+    }
+
+    function getVisibleProducts() {
+      const query = document.getElementById('searchInput').value.trim().toLowerCase();
+      const sort = document.getElementById('sortSelect').value;
+      let list = products.filter(p => {
+        const category = categoryForProduct(p);
+        const name = String(p.name || p.title || '');
+        const desc = String(p.description || p.desc || '');
+        return (selectedCategory === 'all' || category === selectedCategory) &&
+          (!query || (name + ' ' + desc + ' ' + category).toLowerCase().includes(query));
+      });
+      if (sort === 'low') list.sort((a,b) => Number(a.price || 0) - Number(b.price || 0));
+      if (sort === 'high') list.sort((a,b) => Number(b.price || 0) - Number(a.price || 0));
+      if (sort === 'az') list.sort((a,b) => String(a.name || a.title || '').localeCompare(String(b.name || b.title || '')));
+      return list;
+    }
+
+    function renderMenu() {
+      renderCategoryButtons();
+      const visible = getVisibleProducts();
+      menuSections.innerHTML = '';
+      menuStatus.style.display = 'none';
+
+      if (!visible.length) {
+        menuStatus.textContent = products.length
+          ? 'No menu items match your search or selected category.'
+          : 'No products are available yet. Please check back later.';
+        menuStatus.className = 'empty-menu';
+        menuStatus.style.display = 'block';
+        return;
+      }
+
+      const grouped = {};
+      visible.forEach(product => {
+        const category = categoryForProduct(product);
+        (grouped[category] ||= []).push(product);
+      });
+
+      Object.entries(grouped).forEach(([category, items]) => {
+        const section = document.createElement('section');
+        section.innerHTML = `<h2 class="category-title">${safeText(category)}</h2><div class="menu-grid"></div>`;
+        const grid = section.querySelector('.menu-grid');
+        items.forEach(product => {
+          const id = product.id;
+          const name = product.name || product.title || 'Menu item';
+          const price = Number(product.price || 0);
+          const imageUrl = product.imageUrl || product.imageURL || product.image || '';
+          const desc = product.description || product.desc || '';
+          const card = document.createElement('article');
+          card.className = 'food-card';
+          const imageMarkup = imageUrl
+            ? `<img class="food-img" src="${safeText(imageUrl)}" alt="${safeText(name)}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"><div class="food-img-placeholder" style="display:none">🍲</div>`
+            : `<div class="food-img-placeholder">🍲</div>`;
+          card.innerHTML = `${imageMarkup}<div class="food-info">
+            <div class="food-title">${safeText(name)}</div>
+            ${desc ? `<p class="food-desc">${safeText(desc)}</p>` : ''}
+            <div class="food-bottom"><span class="food-price">${money(price)}</span>
+            <button class="add-btn" type="button">+ Add</button></div></div>`;
+          card.querySelector('.add-btn').addEventListener('click', () => addToCart(id, name, price, category));
+          grid.appendChild(card);
+        });
+        menuSections.appendChild(section);
+      });
+    }
+
+    function addToCart(id, name, price, category) {
+      const existing = cart.find(item => item.id === id);
+      if (existing) existing.qty += 1;
+      else cart.push({ id, name, price: Number(price), category, qty: 1 });
+      updateCartUI();
+      document.getElementById('cartSection').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function updateDeliveryFee() {
+      currentFee = document.getElementById('orderType').value === 'DELIVERY' ? 1000 : 0;
+      updateCartUI();
+    }
+
+    function changeQty(id, delta) {
+      const item = cart.find(i => i.id === id);
+      if (!item) return;
+      item.qty += delta;
+      if (item.qty <= 0) cart = cart.filter(i => i.id !== id);
+      updateCartUI();
+    }
+
+    function updateCartUI() {
+      if (!cart.length) {
+        cartItemsEl.innerHTML = '<p class="empty">Your cart is empty. Add items from the menu above.</p>';
+      } else {
+        cartItemsEl.innerHTML = cart.map(item => `
+          <div class="cart-item">
+            <div><div class="cart-item-name">${safeText(item.name)}</div>
+              <small>${money(item.price)} × ${item.qty}</small></div>
+            <div class="qty-controls">
+              <button type="button" aria-label="Remove one ${safeText(item.name)}" data-id="${safeText(item.id)}" data-delta="-1">−</button>
+              <strong>${item.qty}</strong>
+              <button type="button" aria-label="Add one ${safeText(item.name)}" data-id="${safeText(item.id)}" data-delta="1">+</button>
+            </div>
+          </div>`).join('');
+        cartItemsEl.querySelectorAll('button[data-id]').forEach(button => {
+          button.addEventListener('click', () => changeQty(button.dataset.id, Number(button.dataset.delta)));
+        });
+      }
+      const subtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+      document.getElementById('cartSubtotal').textContent = money(subtotal);
+      document.getElementById('deliveryFee').textContent = money(currentFee);
+      document.getElementById('cartTotal').textContent = money(subtotal + currentFee);
+    }
+
+    function showMessage(text, type) {
+      messageEl.textContent = text;
+      messageEl.className = 'message ' + type;
+    }
+
+    async function handlePlaceOrder(event) {
+      event.preventDefault();
+      messageEl.className = 'message';
+      if (!cart.length) {
+        showMessage('Please add at least one menu item before placing your order.', 'error');
+        return;
+      }
+
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Sending Order...';
+
+      const subtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+      const grandTotal = subtotal + currentFee;
+      const payMode = document.getElementById('payMode').value;
+      const customerName = document.getElementById('customerName').value.trim();
+      const phone = document.getElementById('customerPhone').value.trim();
+      const notes = document.getElementById('customerNotes').value.trim();
+      const orderType = document.getElementById('orderType').value;
+      const now = new Date();
+      const timeString = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' +
+        now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+      // Existing orders collection and field names are preserved for the current company dashboard.
+      const newOrder = {
+        orderId: '#' + Math.floor(100000 + Math.random() * 900000),
+        customerName: customerName,
+        phone: phone,
+        type: orderType,
+        amount: grandTotal,
+        payMode: payMode,
+        address: notes,
+        items: cart.map(item => `${item.name} x ${item.qty}`),
+        time: timeString,
+        status: payMode === 'Paid Online' ? 'paid' : 'pending',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      try {
+      console.log("Signed-in user:", auth.currentUser);
+console.log("Order ownerUid:", newOrder.ownerUid);
+console.log("Order data:", newOrder);
+        const docRef = await db.collection('orders').add(newOrder);
+        document.getElementById('trackerOrderId').textContent = `Order Tracker: ${newOrder.orderId}`;
+        document.getElementById('trackerCard').style.display = 'block';
+        document.getElementById('trackerCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+        if (unsubscribeOrder) unsubscribeOrder();
+        unsubscribeOrder = db.collection('orders').doc(docRef.id).onSnapshot(doc => {
+          if (doc.exists) updateTrackerSteps((doc.data().status || 'pending').toLowerCase());
+        });
+
+        cart = [];
+        updateCartUI();
+        document.getElementById('orderForm').reset();
+        currentFee = 0;
+        updateCartUI();
+        showMessage('Order submitted successfully. Keep the order tracker below to follow its status.', 'success');
+      } catch (error) {
+        console.error('Could not submit order:', error);
+        showMessage('The order could not be submitted. Please check your connection and try again. Details: ' + error.message, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Place Order Now';
+      }
+    }
+
+    function updateTrackerSteps(status) {
+      document.querySelectorAll('.step').forEach(step => step.classList.remove('active'));
+      document.getElementById('step-pending').classList.add('active');
+      if (['accepted', 'paid', 'preparing'].includes(status)) {
+        document.getElementById('step-accepted').classList.add('active');
+      }
+      if (['done', 'completed', 'delivered', 'ready'].includes(status)) {
+        document.getElementById('step-accepted').classList.add('active');
+        document.getElementById('step-done').classList.add('active');
+      }
+    }
+
+    async function loadRestaurantSettings() {
+      try {
+        const doc = await db.collection('settings').doc('restaurant').get();
+        if (!doc.exists) return;
+        const settings = doc.data();
+        if (settings.restaurantName) {
+          document.getElementById('restaurantName').textContent = settings.restaurantName;
+          document.getElementById('footerRestaurantName').textContent = settings.restaurantName;
+          document.title = settings.restaurantName + ' — Order Online';
+        }
+        if (settings.currencySymbol) currencySymbol = settings.currencySymbol;
+        if (settings.openingHours) document.getElementById('openBadge').textContent = '🕒 ' + settings.openingHours;
+        if (settings.phone) document.getElementById('customerPhone').placeholder = 'Phone Number (restaurant: ' + settings.phone + ')';
+      } catch (error) {
+        console.warn('Restaurant settings could not be loaded:', error);
+      }
+    }
+
+    async function loadMenu() {
+      menuStatus.textContent = 'Loading menu from E.M Restaurant...';
+      menuStatus.className = 'loading';
+      menuStatus.style.display = 'block';
+      try {
+        const [categorySnapshot, productSnapshot] = await Promise.all([
+          db.collection('categories').get(),
+          db.collection('products').get()
+        ]);
+        categories = categorySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        products = productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+          .filter(product => product.isAvailable !== false && product.available !== false)
+          .filter(product => Number.isFinite(Number(product.price)) && Number(product.price) >= 0);
+        renderMenu();
+
+        // Keep the menu in sync when the restaurant updates products or categories.
+        db.collection('categories').onSnapshot(snapshot => {
+          categories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          renderMenu();
+        }, error => console.error('Category live update failed:', error));
+        db.collection('products').onSnapshot(snapshot => {
+          products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+            .filter(product => product.isAvailable !== false && product.available !== false)
+            .filter(product => Number.isFinite(Number(product.price)) && Number(product.price) >= 0);
+          renderMenu();
+        }, error => {
+          console.error('Product live update failed:', error);
+          menuStatus.textContent = 'Could not refresh the menu. Please reload the page.';
+          menuStatus.className = 'empty-menu';
+          menuStatus.style.display = 'block';
+        });
+      } catch (error) {
+        console.error('Menu loading failed:', error);
+        menuStatus.textContent = 'Unable to load menu from Firebase. Check Firestore rules and confirm that the products and categories collections are readable. ' + error.message;
+        menuStatus.className = 'empty-menu';
+        menuStatus.style.display = 'block';
+      }
+    }
+
+    categoryNav.addEventListener('click', event => {
+      const button = event.target.closest('button[data-category]');
+      if (!button) return;
+      selectedCategory = button.dataset.category;
+      renderMenu();
+    });
+    document.getElementById('searchInput').addEventListener('input', renderMenu);
+    document.getElementById('sortSelect').addEventListener('change', renderMenu);
+    document.getElementById('orderType').addEventListener('change', updateDeliveryFee);
+    document.getElementById('orderForm').addEventListener('submit', handlePlaceOrder);
+
+    loadRestaurantSettings();
+    loadMenu();
+    updateCartUI();
+  </script>
+</body>
+</html>

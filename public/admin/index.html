@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>E.M Restaurant - Quickzu Dashboard</title>
+  <style>
+    :root {
+      --primary:#1a237e; --accent:#e65100; --bg:#f4f5f7; --card-bg:#fff;
+      --text:#212121; --text-muted:#666; --border:#e0e0e0;
+      --shadow:0 4px 12px rgba(0,0,0,.06);
+      --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;font-family:var(--font)}
+    body{background:var(--bg);color:var(--text);display:flex;flex-direction:column;min-height:100vh}
+    .dashboard-nav{background:#fff;border-bottom:1px solid #dcdcdc;padding:12px 20px;display:flex;align-items:center;gap:24px;overflow-x:auto}
+    .brand-logo{font-size:1.2rem;font-weight:700;color:var(--primary);white-space:nowrap}
+    .nav-menu{display:flex;gap:18px;list-style:none;white-space:nowrap}
+    .nav-item{color:#555;text-decoration:none;font-weight:500;cursor:pointer;padding:8px 0 6px;font-size:.9rem;border:0;background:none}
+    .nav-item.active{color:var(--primary);border-bottom:2px solid var(--primary);font-weight:700}
+    .live-stats-bar{background:var(--primary);color:#fff;padding:18px 20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:15px}
+    .stat-card{background:rgba(255,255,255,.12);padding:14px;border-radius:8px;border-left:4px solid #ff9800}
+    .stat-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.5px;opacity:.85}
+    .stat-value{font-size:1.5rem;font-weight:700;margin-top:4px;overflow-wrap:anywhere}
+    main{flex:1;padding:20px;max-width:1300px;margin:0 auto;width:100%}
+    .view-section{display:none}.view-section.active{display:block}
+    .panel{background:var(--card-bg);border-radius:10px;padding:20px;border:1px solid var(--border);box-shadow:var(--shadow);margin-top:15px}
+    .panel-header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:15px;padding-bottom:10px;border-bottom:2px solid #f0f0f0}
+    .panel-title{font-size:1.1rem;font-weight:700;color:var(--primary)}
+    .chart-box{width:100%;height:340px;position:relative}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0}
+    input,select,textarea{border:1px solid #cfd3da;border-radius:7px;padding:10px 11px;background:#fff;color:var(--text);font-size:.92rem;max-width:100%;width:100%}
+    textarea{min-height:90px;resize:vertical}
+    .field{display:flex;flex-direction:column;gap:6px;min-width:0}
+    .field label{font-size:.83rem;font-weight:600;color:#555}
+    .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+    button{cursor:pointer;border:0;border-radius:7px;padding:10px 13px;font-weight:650;font-size:.88rem;transition:opacity .15s}
+    button:hover{opacity:.9}button:disabled{opacity:.5;cursor:not-allowed}
+    .btn-primary{background:var(--primary);color:#fff}.btn-accent{background:var(--accent);color:#fff}
+    .btn-light{background:#eef0f7;color:#1a237e;border:1px solid #d9dced}.btn-danger{background:#b71c1c;color:#fff}
+    .btn-small{padding:7px 9px;font-size:.78rem}
+    .muted{color:var(--text-muted)}.small{font-size:.82rem}.notice{padding:11px 13px;border-radius:7px;background:#fff8e1;border:1px solid #ffe082;color:#674d00;margin:10px 0;line-height:1.5}
+    .success{background:#e8f5e9;border-color:#a5d6a7;color:#1b5e20}.error{background:#ffebee;border-color:#ef9a9a;color:#b71c1c}
+    .kanban-board{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:15px;margin-top:15px;align-items:start}
+    .kanban-column{background:#f8f9fa;border:1px solid #e0e0e0;border-radius:8px;padding:12px;min-height:240px}
+    .column-title{font-weight:700;font-size:.95rem;color:#333;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #ddd;display:flex;justify-content:space-between}
+    .order-card{background:#fff;border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:10px;box-shadow:0 2px 4px rgba(0,0,0,.04);font-size:.85rem;overflow-wrap:anywhere}
+    .order-header{display:flex;justify-content:space-between;gap:8px;font-weight:bold;margin-bottom:6px}
+    .order-amount{color:#2e7d32;font-weight:700}.order-time{font-size:.75rem;color:#888;margin-top:8px}
+    .order-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+    .table-container{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:.9rem;text-align:left;min-width:620px}
+    th,td{padding:12px 10px;border-bottom:1px solid var(--border);vertical-align:top}th{background:#f8f9fa;color:var(--text-muted);font-weight:600}
+    .status{display:inline-block;padding:4px 7px;border-radius:99px;background:#eee;font-size:.74rem;font-weight:700;text-transform:capitalize}
+    .status.pending{background:#fff3e0;color:#e65100}.status.paid{background:#e3f2fd;color:#0d47a1}.status.accepted{background:#ede7f6;color:#4527a0}.status.done{background:#e8f5e9;color:#1b5e20}.status.cancelled{background:#ffebee;color:#b71c1c}
+    .empty{padding:20px;text-align:center;color:#888}.item-card{border:1px solid var(--border);border-radius:8px;padding:14px;background:#fff}
+    .item-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+    .item-card h3{font-size:1rem;margin-bottom:6px}.item-card p{margin:5px 0;overflow-wrap:anywhere}
+    .item-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+    .hidden{display:none!important}#qrCanvasWrap{margin-top:16px;background:#fff;padding:14px;display:inline-block;border:1px solid var(--border);border-radius:8px;min-height:40px}
+    .footer-note{font-size:.78rem;color:#777;text-align:center;padding:18px}
+    .auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:22px;background:linear-gradient(135deg,#1a237e,#3949ab)}
+    .auth-card{width:100%;max-width:420px;background:#fff;border-radius:14px;padding:26px;box-shadow:0 18px 50px rgba(0,0,0,.22)}
+    .auth-card h1{font-size:1.45rem;color:var(--primary);margin-bottom:7px}.auth-card p{color:#666;line-height:1.5;margin-bottom:16px}
+    .auth-card .field{margin:12px 0}.auth-card button{width:100%;margin-top:8px}.auth-status{margin-top:12px;font-size:.9rem;overflow-wrap:anywhere}
+    .topbar-user{display:flex;align-items:center;gap:10px;margin-left:auto;white-space:nowrap}.topbar-user span{font-size:.8rem;color:#666}
+    @media(max-width:600px){main{padding:12px}.panel{padding:14px}.live-stats-bar{padding:12px;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.stat-value{font-size:1.15rem}.dashboard-nav{padding:12px}.chart-box{height:280px}}
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+  <section id="loginScreen" class="auth-screen">
+    <div class="auth-card">
+      <div style="font-size:2rem;margin-bottom:8px">🛍️</div>
+      <h1>E.M Restaurant</h1>
+      <p>Company dashboard. Sign in with your authorised administrator email and password.</p>
+      <form id="loginForm">
+        <div class="field"><label for="loginEmail">Administrator email</label><input id="loginEmail" type="email" autocomplete="username" required maxlength="254" placeholder="admin@example.com"></div>
+        <div class="field"><label for="loginPassword">Password</label><input id="loginPassword" type="password" autocomplete="current-password" required minlength="6" placeholder="Your password"></div>
+        <button id="loginButton" class="btn-primary" type="submit">Sign in securely</button>
+        <button id="resetPasswordButton" class="btn-light" type="button">Send password reset email</button>
+      </form>
+      <div id="loginStatus" class="auth-status" role="status" aria-live="polite"></div>
+    </div>
+  </section>
+  <div id="dashboardShell" class="hidden">
+  <nav class="dashboard-nav" aria-label="Main navigation">
+    <div class="brand-logo">🛍️ Quickzu <span class="small muted">| E.M Restaurant</span></div>
+    <div class="topbar-user"><span id="signedInEmail"></span><button id="signOutButton" class="btn-light btn-small" type="button">Sign out</button></div>
+    <ul class="nav-menu">
+      <li><button class="nav-item active" data-view="dashboardView">🏠 Dashboard</button></li>
+      <li><button class="nav-item" data-view="categoriesView">🔲 Categories</button></li>
+      <li><button class="nav-item" data-view="productsView">📦 Products</button></li>
+      <li><button class="nav-item" data-view="ordersView">🛒 Orders</button></li>
+      <li><button class="nav-item" data-view="qrBuilderView">📲 QR Builder</button></li>
+      <li><button class="nav-item" data-view="customersView">👥 Customers</button></li>
+      <li><button class="nav-item" data-view="settingsView">⚙ Settings</button></li>
+      <li><button class="nav-item" data-view="paymentsView">💳 Payments</button></li>
+    </ul>
+  </nav>
+
+  <div class="live-stats-bar">
+    <div class="stat-card"><div class="stat-label">Total Orders</div><div class="stat-value" id="statTotalOrders">0</div></div>
+    <div class="stat-card" style="border-left-color:#4caf50"><div class="stat-label">Total Revenue</div><div class="stat-value" id="statTotalSales">₦0.00</div></div>
+    <div class="stat-card" style="border-left-color:#ff9800"><div class="stat-label">Pending Orders</div><div class="stat-value" id="statPendingOrders">0</div></div>
+    <div class="stat-card" style="border-left-color:#9c27b0"><div class="stat-label">Total Customers</div><div class="stat-value" id="statTotalCustomers">0</div></div>
+  </div>
+
+  <main>
+    <div id="appMessage" class="notice hidden" role="status" aria-live="polite"></div>
+
+    <section id="dashboardView" class="view-section active">
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">📊 Orders by Hour (Today)</span><span id="connectionState" class="small muted">Connecting to Firebase…</span></div>
+        <p class="muted small">Counts are calculated from each order's <code>createdAt</code> timestamp for today, using your browser's local time.</p>
+        <div class="chart-box"><canvas id="ordersBarChart"></canvas></div>
+      </div>
+      <div class="panel"><div class="panel-header"><span class="panel-title">Recent Orders</span><button class="btn-light btn-small" data-goto="ordersView">Open orders</button></div><div id="recentOrders" class="item-grid"><div class="empty">Waiting for orders…</div></div></div>
+    </section>
+
+    <section id="categoriesView" class="view-section">
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">🔲 Categories</span></div>
+        <p class="muted small">Uses your existing <code>categories</code> collection. The visible category fields are <code>name</code> and <code>createdAt</code>; category operations preserve that structure.</p>
+        <form id="categoryForm">
+          <input type="hidden" id="categoryId">
+          <div class="form-grid">
+            <div class="field"><label for="categoryName">Category name *</label><input id="categoryName" required maxlength="80" placeholder="e.g. Rice dishes"></div>
+            <div class="field"><label>Category record</label><input value="Name and creation timestamp" disabled></div>
+          </div>
+          <div class="toolbar"><button class="btn-primary" type="submit" id="categorySubmit">Add category</button><button class="btn-light" type="button" id="categoryCancel">Clear</button></div>
+        </form>
+        <div class="item-grid" id="categoriesList"><div class="empty">Loading categories…</div></div>
+      </div>
+    </section>
+
+    <section id="productsView" class="view-section">
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">📦 Products / Menu</span></div>
+        <p class="muted small">Uses your existing <code>products</code> fields: <code>category</code>, <code>createdAt</code>, <code>imageUrl</code>, <code>name</code>, and <code>price</code>. Existing order documents are not changed.</p>
+        <form id="productForm">
+          <input type="hidden" id="productId">
+          <div class="form-grid">
+            <div class="field"><label for="productName">Product name *</label><input id="productName" required maxlength="100" placeholder="e.g. Jollof rice"></div>
+            <div class="field"><label for="productPrice">Price in naira *</label><input id="productPrice" type="number" min="0" step="0.01" required placeholder="2500"></div>
+            <div class="field"><label for="productCategory">Category</label><select id="productCategory"><option value="">Choose category</option></select></div>
+            <div class="field"><label for="productImageUrl">Image URL</label><input id="productImageUrl" type="url" placeholder="https://…"></div>
+          </div>
+          <div class="toolbar"><button class="btn-primary" type="submit" id="productSubmit">Add product</button><button class="btn-light" type="button" id="productCancel">Clear</button></div>
+        </form>
+        <div class="toolbar"><input id="productSearch" placeholder="Search products…" aria-label="Search products"></div>
+        <div id="productsList" class="item-grid"><div class="empty">Loading products…</div></div>
+      </div>
+    </section>
+
+    <section id="ordersView" class="view-section">
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">🛒 Live Orders</span><input id="orderSearch" style="max-width:320px" placeholder="Search order, customer or phone…"></div>
+        <p class="muted small">Status changes update the existing <code>status</code> field only. Check your Firestore Security Rules to ensure only authorised staff can update orders.</p>
+        <div class="kanban-board">
+          <div class="kanban-column"><div class="column-title">Pending <span id="count-pending">0</span></div><div id="col-pending"></div></div>
+          <div class="kanban-column"><div class="column-title">Paid <span id="count-paid">0</span></div><div id="col-paid"></div></div>
+          <div class="kanban-column"><div class="column-title">Accepted <span id="count-accepted">0</span></div><div id="col-accepted"></div></div>
+          <div class="kanban-column"><div class="column-title">Done <span id="count-done">0</span></div><div id="col-done"></div></div>
+          <div class="kanban-column"><div class="column-title">Cancelled <span id="count-cancelled">0</span></div><div id="col-cancelled"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="qrBuilderView" class="view-section">
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">📲 QR Builder</span></div>
+        <p class="muted small">This creates a QR code locally in your browser. It does not write to Firestore. Enter the actual menu/table URL that your customers should open.</p>
+        <form id="qrForm">
+          <div class="form-grid">
+            <div class="field"><label for="qrLabel">Label (optional)</label><input id="qrLabel" maxlength="80" placeholder="Table 1"></div>
+            <div class="field"><label for="qrUrl">Menu or table URL *</label><input id="qrUrl" type="url" required placeholder="https://your-menu-site.example/table/1"></div>
+          </div>
+          <div class="toolbar"><button class="btn-primary" type="submit">Generate QR code</button><button class="btn-light" type="button" id="qrClear">Clear</button></div>
+        </form>
+        <div id="qrResult" class="hidden"><h3 id="qrResultLabel"></h3><div id="qrCanvasWrap"><div id="qrCanvas"></div></div><div class="toolbar"><button class="btn-primary" type="button" id="qrDownload">Download PNG</button></div></div>
+      </div>
+    </section>
+
+    <section id="customersView" class="view-section">
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">👥 Customers Directory</span><input id="customerSearch" style="max-width:320px" placeholder="Search name or phone…"></div>
+        <p class="muted small">Customer records are calculated from the existing <code>orders</code> collection; no separate customer collection is created.</p>
+        <div class="table-container"><table><thead><tr><th>Customer Name</th><th>Phone Number</th><th>Total Orders</th><th>Total Spent</th><th>Last Order Date</th><th></th></tr></thead><tbody id="customersTableBody"><tr><td colspan="6" class="empty">Loading customer records…</td></tr></tbody></table></div>
+      </div>
+      <div id="customerHistoryPanel" class="panel hidden"><div class="panel-header"><span class="panel-title" id="customerHistoryTitle">Customer order history</span><button class="btn-light btn-small" id="closeCustomerHistory">Close</button></div><div id="customerHistory"></div></div>
+    </section>
+
+    <section id="settingsView" class="view-section">
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">⚙ Restaurant Settings</span></div>
+        <div class="notice">Settings will be saved to <code>settings/restaurant</code>. This is a new document path; your existing screenshot does not confirm whether the public ordering site reads it.</div>
+        <form id="settingsForm">
+          <div class="form-grid">
+            <div class="field"><label for="settingName">Restaurant name</label><input id="settingName" maxlength="100" placeholder="E.M Restaurant"></div>
+            <div class="field"><label for="settingPhone">Contact phone</label><input id="settingPhone" maxlength="30" placeholder="Phone number"></div>
+            <div class="field"><label for="settingAddress">Address</label><input id="settingAddress" maxlength="250" placeholder="Restaurant address"></div>
+            <div class="field"><label for="settingCurrency">Currency symbol</label><input id="settingCurrency" maxlength="5" value="₦" required></div>
+            <div class="field"><label for="settingHours">Opening hours</label><input id="settingHours" maxlength="120" placeholder="e.g. Mon–Sat, 9am–10pm"></div>
+          </div>
+          <div class="toolbar"><button class="btn-primary" type="submit">Save settings</button></div>
+        </form>
+      </div>
+    </section>
+
+    <section id="paymentsView" class="view-section">
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">💳 Payments Overview</span></div>
+        <div class="notice">This view is derived from existing order fields (<code>amount</code>, <code>payMode</code>, and <code>status</code>). It is not a bank statement, payment gateway confirmation, or proof that funds have settled.</div>
+        <div class="form-grid">
+          <div class="stat-card" style="background:#f4f5f7;color:#212121;border-left-color:#4caf50"><div class="stat-label">Paid-status order value</div><div class="stat-value" id="paidValue">₦0.00</div></div>
+          <div class="stat-card" style="background:#f4f5f7;color:#212121;border-left-color:#ff9800"><div class="stat-label">Pending-status order value</div><div class="stat-value" id="pendingValue">₦0.00</div></div>
+          <div class="stat-card" style="background:#f4f5f7;color:#212121;border-left-color:#9c27b0"><div class="stat-label">Orders with payment mode</div><div class="stat-value" id="paymentModeCount">0</div></div>
+        </div>
+        <h3 style="margin:18px 0 10px">Order payment summary</h3>
+        <div class="table-container"><table><thead><tr><th>Order ID</th><th>Customer</th><th>Payment Mode</th><th>Order Status</th><th>Amount</th><th>Order Time</th></tr></thead><tbody id="paymentsTableBody"><tr><td colspan="6" class="empty">Loading payment summary…</td></tr></tbody></table></div>
+      </div>
+    </section>
+  </main>
+  <div class="footer-note">Quickzu dashboard • Keep your Firebase configuration and Firestore Security Rules secure.</div>
+  </div><!-- /dashboardShell -->
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script>
+    // Existing Firebase project configuration preserved.
+    const firebaseConfig = {
+      apiKey: "AIzaSyCTBS0iiHqo1SaF8402oQapvVAu2ReSs7w",
+      authDomain: "quickzu-app.firebaseapp.com",
+      projectId: "quickzu-app",
+      storageBucket: "quickzu-app.firebasestorage.app",
+      messagingSenderId: "459582558032",
+      appId: "1:459582558032:web:e6638cb82701049a03e655",
+      measurementId: "G-5H1Y50TWL2"
+    };
+
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    // IMPORTANT: replace this placeholder with the administrator's Firebase Authentication UID.
+    // This is only a UI gate; Firestore Rules independently enforce the same UID.
+    const ADMIN_UID = 'AaO71KqiEtYpivEEMOfkbQH31i63';
+    let listenersStarted = false;
+
+    const $ = (id) => document.getElementById(id);
+    const money = (value) => '₦' + Number(value || 0).toLocaleString('en-NG', {minimumFractionDigits:2, maximumFractionDigits:2});
+    const safeText = (value, fallback='') => value === null || value === undefined ? fallback : String(value);
+    const escapeText = (value) => safeText(value);
+    let allOrders = [];
+    let categories = [];
+    let products = [];
+    let restaurantSettings = {};
+    let qrCodeInstance = null;
+    let ordersChart = null;
+    let unsubscribeOrders = null, unsubscribeCategories = null, unsubscribeProducts = null, unsubscribeSettings = null;
+
+    function showMessage(message, type='notice') {
+      const el = $('appMessage');
+      el.className = 'notice' + (type === 'success' ? ' success' : type === 'error' ? ' error' : '');
+      el.textContent = message;
+      el.classList.remove('hidden');
+      window.clearTimeout(showMessage.timer);
+      showMessage.timer = window.setTimeout(() => el.classList.add('hidden'), 6500);
+    }
+    function showView(viewId) {
+      document.querySelectorAll('.view-section').forEach(section => section.classList.toggle('active', section.id === viewId));
+      document.querySelectorAll('.nav-item').forEach(item => item.classList.toggle('active', item.dataset.view === viewId));
+    }
+    document.querySelectorAll('.nav-item').forEach(item => item.addEventListener('click', () => showView(item.dataset.view)));
+    document.querySelectorAll('[data-goto]').forEach(button => button.addEventListener('click', () => showView(button.dataset.goto)));
+
+    function orderDate(order) {
+      const raw = order.createdAt;
+      if (raw && typeof raw.toDate === 'function') return raw.toDate();
+      if (raw instanceof Date) return raw;
+      if (typeof raw === 'number') return new Date(raw);
+      if (typeof raw === 'string') { const d = new Date(raw); if (!Number.isNaN(d.getTime())) return d; }
+      if (order.time) { const d = new Date(order.time); if (!Number.isNaN(d.getTime())) return d; }
+      return null;
+    }
+    function formatDate(order) {
+      const d = orderDate(order);
+      return d ? d.toLocaleString() : safeText(order.time, 'N/A');
+    }
+    function normalStatus(order) {
+      const s = safeText(order.status, 'pending').toLowerCase();
+      return ['pending','paid','accepted','done','cancelled'].includes(s) ? s : 'pending';
+    }
+    function getOrderId(order, docId) { return safeText(order.orderId, docId || '—'); }
+
+    function initChart() {
+      const canvas = $('ordersBarChart');
+      if (!canvas || typeof Chart === 'undefined') {
+        $('connectionState').textContent = 'Chart library unavailable';
+        return;
+      }
+      const labels = Array.from({length:24}, (_, hour) => String(hour).padStart(2,'0') + ':00');
+      ordersChart = new Chart(canvas.getContext('2d'), {
+        type:'bar',
+        data:{labels, datasets:[{label:'Orders today',data:Array(24).fill(0),backgroundColor:'rgba(26,35,126,.85)',borderColor:'#1a237e',borderWidth:1,borderRadius:4}]},
+        options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,ticks:{stepSize:1}}},plugins:{legend:{display:true}}}
+      });
+    }
+    function updateChart() {
+      if (!ordersChart) return;
+      const counts = Array(24).fill(0);
+      const now = new Date();
+      allOrders.forEach(({data}) => {
+        const date = orderDate(data);
+        if (date && date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate()) counts[date.getHours()]++;
+      });
+      ordersChart.data.datasets[0].data = counts;
+      ordersChart.update();
+    }
+
+    function createOrderCard(order, docId, compact=false) {
+      const card = document.createElement('article');
+      card.className = 'order-card';
+      const header = document.createElement('div'); header.className = 'order-header';
+      const id = document.createElement('span'); id.textContent = getOrderId(order, docId);
+      const type = document.createElement('span'); type.textContent = safeText(order.type, 'DELIVERY');
+      header.append(id,type); card.appendChild(header);
+
+      const customer = document.createElement('div'); customer.textContent = safeText(order.customerName, 'Guest Customer');
+      card.appendChild(customer);
+      const amount = document.createElement('div'); amount.className = 'order-amount'; amount.textContent = money(order.amount); card.appendChild(amount);
+      const mode = document.createElement('div'); mode.className = 'muted small'; mode.style.marginTop='4px'; mode.textContent = safeText(order.payMode, 'Payment mode not specified'); card.appendChild(mode);
+      if (Array.isArray(order.items)) {
+        const items = document.createElement('div'); items.style.marginTop='7px';
+        items.textContent = order.items.map(item => typeof item === 'string' ? item : (item && typeof item === 'object' ? [item.name || item.productName || item.title, item.quantity ? '× '+item.quantity : ''].filter(Boolean).join(' ') : String(item))).join(' • ');
+        card.appendChild(items);
+      } else if (typeof order.items === 'string') {
+        const items = document.createElement('div'); items.style.marginTop='7px'; items.textContent = order.items; card.appendChild(items);
+      }
+      const time = document.createElement('div'); time.className='order-time'; time.textContent = formatDate(order); card.appendChild(time);
+      const statusLine = document.createElement('div'); statusLine.style.marginTop='7px';
+      const badge = document.createElement('span'); badge.className='status '+normalStatus(order); badge.textContent=normalStatus(order); statusLine.appendChild(badge); card.appendChild(statusLine);
+
+      if (!compact) {
+        const actions = document.createElement('div'); actions.className='order-actions';
+        const transitions = {
+          pending:[['Mark paid','paid'],['Accept','accepted'],['Cancel','cancelled']],
+          paid:[['Accept','accepted'],['Cancel','cancelled']],
+          accepted:[['Mark done','done'],['Cancel','cancelled']],
+          done:[], cancelled:[]
+        };
+        (transitions[normalStatus(order)] || []).forEach(([label,status]) => {
+          const btn=document.createElement('button'); btn.className='btn-small '+(status==='cancelled'?'btn-danger':'btn-light'); btn.textContent=label;
+          btn.addEventListener('click', () => updateOrderStatus(docId,status,btn)); actions.appendChild(btn);
+        });
+        const details=document.createElement('button'); details.className='btn-small btn-light'; details.textContent='Details';
+        details.addEventListener('click',()=>showOrderDetails(order,docId)); actions.appendChild(details);
+        card.appendChild(actions);
+      }
+      return card;
+    }
+    async function updateOrderStatus(docId, status, button) {
+      if (!docId) return showMessage('Cannot update this order: document ID is missing.', 'error');
+      if (status === 'cancelled' && !window.confirm('Cancel this order? This changes only the order status.')) return;
+      button.disabled = true;
+      try {
+        await db.collection('orders').doc(docId).update({status});
+        showMessage('Order status updated to "' + status + '".', 'success');
+      } catch (error) {
+        console.error(error);
+        showMessage('Could not update order. Check sign-in status and Firestore Security Rules. ' + error.message, 'error');
+      } finally { button.disabled = false; }
+    }
+    function showOrderDetails(order,docId) {
+      const lines = [
+        'Order: '+getOrderId(order,docId),
+        'Customer: '+safeText(order.customerName,'Guest Customer'),
+        'Phone: '+safeText(order.phone,'Not provided'),
+        'Status: '+normalStatus(order),
+        'Amount: '+money(order.amount),
+        'Type: '+safeText(order.type,'Not specified'),
+        'Payment mode: '+safeText(order.payMode,'Not specified'),
+        'Time: '+formatDate(order),
+        'Items: '+(Array.isArray(order.items)?order.items.map(x=>typeof x==='string'?x:JSON.stringify(x)).join(', '):safeText(order.items,'Not listed'))
+      ];
+      window.alert(lines.join('\n'));
+    }
+    function renderOrders() {
+      const statuses=['pending','paid','accepted','done','cancelled'];
+      statuses.forEach(status => { $('col-'+status).replaceChildren(); $('count-'+status).textContent='0'; });
+      const query=$('orderSearch').value.trim().toLowerCase();
+      const filtered=allOrders.filter(({data,docId}) => [getOrderId(data,docId),data.customerName,data.phone,data.status].some(v=>safeText(v).toLowerCase().includes(query)));
+      const counts=Object.fromEntries(statuses.map(s=>[s,0]));
+      filtered.forEach(({data,docId})=>{
+        const status=normalStatus(data); counts[status]++;
+        $('col-'+status).appendChild(createOrderCard(data,docId));
+      });
+      statuses.forEach(status=>{
+        $('count-'+status).textContent=counts[status];
+        if (!$('col-'+status).children.length) { const e=document.createElement('div'); e.className='empty small'; e.textContent='No orders'; $('col-'+status).appendChild(e); }
+      });
+      const recent=$('recentOrders'); recent.replaceChildren();
+      allOrders.slice(0,4).forEach(({data,docId})=>recent.appendChild(createOrderCard(data,docId,true)));
+      if (!allOrders.length) { const e=document.createElement('div'); e.className='empty'; e.textContent='No orders found yet.'; recent.appendChild(e); }
+    }
+
+    function renderCustomers() {
+      const map = new Map();
+      allOrders.forEach(({data,docId}) => {
+        const phone=safeText(data.phone,'No Phone').trim() || 'No Phone';
+        const key=phone==='No Phone' ? 'no-phone:'+safeText(data.customerName,'Guest Customer') : phone;
+        if (!map.has(key)) map.set(key,{key,name:safeText(data.customerName,'Guest Customer'),phone,totalOrders:0,totalSpent:0,lastDate:null,orders:[]});
+        const c=map.get(key); c.totalOrders++; c.totalSpent+=Number(data.amount||0); c.orders.push({data,docId});
+        const d=orderDate(data); if (d && (!c.lastDate || d>c.lastDate)) c.lastDate=d;
+        if (c.name==='Guest Customer' && data.customerName) c.name=String(data.customerName);
+      });
+      const customers=[...map.values()].sort((a,b)=>(b.lastDate?.getTime()||0)-(a.lastDate?.getTime()||0));
+      $('statTotalCustomers').textContent=customers.length;
+      const q=$('customerSearch').value.trim().toLowerCase();
+      const tbody=$('customersTableBody'); tbody.replaceChildren();
+      const filtered=customers.filter(c=>(c.name+' '+c.phone).toLowerCase().includes(q));
+      if (!filtered.length) {
+        const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=6;td.className='empty';td.textContent='No matching customer records.';tr.appendChild(td);tbody.appendChild(tr);return;
+      }
+      filtered.forEach(c=>{
+        const tr=document.createElement('tr');
+        [c.name,c.phone,String(c.totalOrders),money(c.totalSpent),c.lastDate?c.lastDate.toLocaleString():'N/A'].forEach(value=>{const td=document.createElement('td');td.textContent=value;tr.appendChild(td);});
+        const td=document.createElement('td'),btn=document.createElement('button');btn.className='btn-light btn-small';btn.textContent='Order history';btn.addEventListener('click',()=>showCustomerHistory(c));td.appendChild(btn);tr.appendChild(td);tbody.appendChild(tr);
+      });
+    }
+    function showCustomerHistory(customer) {
+      $('customerHistoryPanel').classList.remove('hidden');
+      $('customerHistoryTitle').textContent=customer.name+' — Order History';
+      const target=$('customerHistory');target.replaceChildren();
+      customer.orders.forEach(({data,docId})=>target.appendChild(createOrderCard(data,docId,true)));
+      $('customerHistoryPanel').scrollIntoView({behavior:'smooth',block:'start'});
+    }
+    $('closeCustomerHistory').addEventListener('click',()=>$('customerHistoryPanel').classList.add('hidden'));
+
+    function renderPayments() {
+      let paid=0,pending=0,withMode=0;
+      const tbody=$('paymentsTableBody');tbody.replaceChildren();
+      const sorted=allOrders.slice().sort((a,b)=>(orderDate(b.data)?.getTime()||0)-(orderDate(a.data)?.getTime()||0));
+      sorted.forEach(({data,docId})=>{
+        const amount=Number(data.amount||0),status=normalStatus(data);
+        if(status==='paid')paid+=amount;
+        if(status==='pending')pending+=amount;
+        if(safeText(data.payMode).trim())withMode++;
+        const tr=document.createElement('tr');
+        [getOrderId(data,docId),safeText(data.customerName,'Guest Customer'),safeText(data.payMode,'Not specified'),status,money(amount),formatDate(data)].forEach((value,i)=>{
+          const td=document.createElement('td');td.textContent=value;
+          if(i===3){const badge=document.createElement('span');badge.className='status '+status;badge.textContent=status;td.replaceChildren(badge);}
+          tr.appendChild(td);
+        });tbody.appendChild(tr);
+      });
+      if(!sorted.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=6;td.className='empty';td.textContent='No order/payment data available.';tr.appendChild(td);tbody.appendChild(tr);}
+      $('paidValue').textContent=money(paid);$('pendingValue').textContent=money(pending);$('paymentModeCount').textContent=withMode;
+    }
+
+    // Category CRUD: preserves the visible category schema (name, createdAt).
+    function clearCategoryForm() { $('categoryForm').reset(); $('categoryId').value=''; $('categorySubmit').textContent='Add category'; }
+    $('categoryCancel').addEventListener('click',clearCategoryForm);
+    $('categoryForm').addEventListener('submit',async e=>{
+      e.preventDefault();
+      const id=$('categoryId').value;
+      const name=$('categoryName').value.trim();
+      if(!name)return;
+      try{
+        if(id) await db.collection('categories').doc(id).update({name});
+        else await db.collection('categories').add({name,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+        clearCategoryForm();showMessage('Category saved.','success');
+      }catch(err){console.error(err);showMessage('Could not save category: '+err.message,'error');}
+    });
+    function renderCategories() {
+      const list=$('categoriesList');list.replaceChildren();
+      if(!categories.length){const e=document.createElement('div');e.className='empty';e.textContent='No categories yet. Add your first category above.';list.appendChild(e);}
+      categories.forEach(c=>{
+        const box=document.createElement('article');box.className='item-card';
+        const h=document.createElement('h3');h.textContent=c.data.name||'(Unnamed category)';box.appendChild(h);
+        const p=document.createElement('p');p.className='muted small';p.textContent='Category ID: '+c.docId;box.appendChild(p);
+        const actions=document.createElement('div');actions.className='item-actions';
+        const edit=document.createElement('button');edit.className='btn-light btn-small';edit.textContent='Edit';edit.addEventListener('click',()=>{$('categoryId').value=c.docId;$('categoryName').value=c.data.name||'';$('categorySubmit').textContent='Save changes';$('categoryForm').scrollIntoView({behavior:'smooth'});});
+        const del=document.createElement('button');del.className='btn-danger btn-small';del.textContent='Delete';del.addEventListener('click',()=>deleteCategory(c));actions.append(edit,del);box.appendChild(actions);list.appendChild(box);
+      });
+      const select=$('productCategory');const previous=select.value;select.replaceChildren();
+      const blank=document.createElement('option');blank.value='';blank.textContent='Choose category';select.appendChild(blank);
+      categories.forEach(c=>{const o=document.createElement('option');o.value=safeText(c.data.name);o.textContent=safeText(c.data.name,'(Unnamed category)');select.appendChild(o);});
+      if([...select.options].some(o=>o.value===previous))select.value=previous;
+    }
+    async function deleteCategory(c) {
+      if(!window.confirm('Delete category "'+(c.data.name||'Unnamed')+'"? Existing products are not deleted. Products using this category name will retain that text.'))return;
+      try{await db.collection('categories').doc(c.docId).delete();showMessage('Category deleted. Existing products were not changed.','success');}
+      catch(err){showMessage('Could not delete category: '+err.message,'error');}
+    }
+
+    // Product CRUD: matches the existing visible product fields:
+    // category (string), createdAt (timestamp), imageUrl (string), name (string), price (integer).
+    function clearProductForm(){ $('productForm').reset();$('productId').value='';$('productSubmit').textContent='Add product'; }
+    $('productCancel').addEventListener('click',clearProductForm);
+    $('productForm').addEventListener('submit',async e=>{
+      e.preventDefault();
+      const price=Number($('productPrice').value);
+      if(!Number.isFinite(price)||price<0)return showMessage('Enter a valid non-negative product price.','error');
+      const id=$('productId').value;
+      const payload={
+        name:$('productName').value.trim(),
+        price:Math.round(price),
+        category:$('productCategory').value||'',
+        imageUrl:$('productImageUrl').value.trim()
+      };
+      if(!payload.name)return;
+      if(payload.imageUrl){try{new URL(payload.imageUrl);}catch(_){return showMessage('Image URL must be a valid full URL.','error');}}
+      try{
+        if(id)await db.collection('products').doc(id).update(payload);
+        else{payload.createdAt=firebase.firestore.FieldValue.serverTimestamp();await db.collection('products').add(payload);}
+        clearProductForm();showMessage('Product saved.','success');
+      }catch(err){console.error(err);showMessage('Could not save product: '+err.message,'error');}
+    });
+    $('productSearch').addEventListener('input',renderProducts);
+    function renderProducts(){
+      const list=$('productsList');list.replaceChildren();const q=$('productSearch').value.trim().toLowerCase();
+      const filtered=products.filter(p=>[p.data.name,p.data.category,p.data.imageUrl].some(v=>safeText(v).toLowerCase().includes(q)));
+      if(!filtered.length){const e=document.createElement('div');e.className='empty';e.textContent=products.length?'No products match your search.':'No products yet. Add your first menu item above.';list.appendChild(e);return;}
+      filtered.forEach(p=>{
+        const box=document.createElement('article');box.className='item-card';
+        if(p.data.imageUrl){
+          try { const url=new URL(p.data.imageUrl); if(['http:','https:'].includes(url.protocol)){const img=document.createElement('img');img.src=url.href;img.alt=safeText(p.data.name,'Product image');img.loading='lazy';img.style.cssText='width:100%;height:150px;object-fit:cover;border-radius:6px;margin-bottom:10px';img.onerror=()=>img.remove();box.appendChild(img);} } catch(_){}
+        }
+        const h=document.createElement('h3');h.textContent=p.data.name||'(Unnamed product)';box.appendChild(h);
+        const price=document.createElement('p');price.className='order-amount';price.textContent=money(p.data.price);box.appendChild(price);
+        const cat=document.createElement('p');cat.className='muted small';cat.textContent='Category: '+safeText(p.data.category,'Uncategorised');box.appendChild(cat);
+        const image=document.createElement('p');image.className='muted small';image.textContent=p.data.imageUrl?'Image URL saved':'No image URL';box.appendChild(image);
+        const actions=document.createElement('div');actions.className='item-actions';
+        const edit=document.createElement('button');edit.className='btn-light btn-small';edit.textContent='Edit';edit.addEventListener('click',()=>{
+          $('productId').value=p.docId;$('productName').value=p.data.name||'';$('productPrice').value=Number(p.data.price||0);
+          const categoryValue=safeText(p.data.category);if(![...$('productCategory').options].some(o=>o.value===categoryValue)&&categoryValue){const o=document.createElement('option');o.value=categoryValue;o.textContent=categoryValue+' (existing)';$('productCategory').appendChild(o);}
+          $('productCategory').value=categoryValue;$('productImageUrl').value=p.data.imageUrl||'';$('productSubmit').textContent='Save changes';$('productForm').scrollIntoView({behavior:'smooth'});
+        });
+        const del=document.createElement('button');del.className='btn-danger btn-small';del.textContent='Delete';del.addEventListener('click',async()=>{
+          if(!confirm('Permanently delete product "'+(p.data.name||'Unnamed')+'"? This does not remove it from past order records.'))return;
+          try{await db.collection('products').doc(p.docId).delete();showMessage('Product deleted. Past orders were not changed.','success');}
+          catch(err){showMessage('Could not delete product: '+err.message,'error');}
+        });
+        actions.append(edit,del);box.appendChild(actions);list.appendChild(box);
+      });
+    }
+    function categoryName(categoryValue){return categoryValue||'Uncategorised';}
+
+    // QR Builder. QRCode library generates a client-side QR; no Firestore writes.
+    $('qrForm').addEventListener('submit',e=>{
+      e.preventDefault();
+      if(typeof QRCode==='undefined')return showMessage('QR library did not load. Check your internet connection and try again.','error');
+      const url=$('qrUrl').value.trim();
+      try{new URL(url);}catch(_){return showMessage('Enter a valid full URL including https://','error');}
+      $('qrCanvas').replaceChildren();$('qrResult').classList.remove('hidden');
+      $('qrResultLabel').textContent=$('qrLabel').value.trim()||'QR Code';
+      qrCodeInstance=new QRCode($('qrCanvas'),{text:url,width:240,height:240,colorDark:'#111111',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});
+      showMessage('QR code generated. Test it with a phone before printing.','success');
+    });
+    $('qrClear').addEventListener('click',()=>{$('qrForm').reset();$('qrCanvas').replaceChildren();$('qrResult').classList.add('hidden');qrCodeInstance=null;});
+    $('qrDownload').addEventListener('click',()=>{
+      const canvas=$('qrCanvas').querySelector('canvas');const img=$('qrCanvas').querySelector('img');
+      const data=canvas?canvas.toDataURL('image/png'):(img?img.src:null);
+      if(!data)return showMessage('Generate a QR code first.','error');
+      const a=document.createElement('a');a.href=data;a.download=(($('qrLabel').value.trim()||'quickzu-qr').replace(/[^a-z0-9-_]/gi,'-'))+'.png';document.body.appendChild(a);a.click();a.remove();
+    });
+
+    // Settings are stored in a new settings/restaurant document.
+    $('settingsForm').addEventListener('submit',async e=>{
+      e.preventDefault();
+      const payload={restaurantName:$('settingName').value.trim(),phone:$('settingPhone').value.trim(),address:$('settingAddress').value.trim(),currencySymbol:$('settingCurrency').value.trim()||'₦',openingHours:$('settingHours').value.trim(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
+      try{await db.collection('settings').doc('restaurant').set(payload,{merge:true});showMessage('Restaurant settings saved.','success');}
+      catch(err){showMessage('Could not save settings: '+err.message,'error');}
+    });
+    function renderSettings(s){
+      restaurantSettings=s||{};
+      $('settingName').value=restaurantSettings.restaurantName||'E.M Restaurant';
+      $('settingPhone').value=restaurantSettings.phone||'';
+      $('settingAddress').value=restaurantSettings.address||'';
+      $('settingCurrency').value=restaurantSettings.currencySymbol||'₦';
+      $('settingHours').value=restaurantSettings.openingHours||'';
+    }
+
+    // Realtime Firestore listeners.
+    function startListeners(){
+      unsubscribeOrders=db.collection('orders').orderBy('createdAt','desc').onSnapshot(snapshot=>{
+        allOrders=snapshot.docs.map(doc=>({docId:doc.id,data:doc.data()}));
+        const totalOrders=allOrders.length;
+        const totalSales=allOrders.reduce((sum,o)=>sum+Number(o.data.amount||0),0);
+        const pendingOrders=allOrders.filter(o=>['pending','paid'].includes(safeText(o.data.status,'pending').toLowerCase())).length;
+        $('statTotalOrders').textContent=totalOrders;
+        $('statTotalSales').textContent=money(totalSales);
+        $('statPendingOrders').textContent=pendingOrders;
+        $('connectionState').textContent='🟢 Connected · Live updates enabled';
+        updateChart();renderOrders();renderCustomers();renderPayments();
+      },error=>{
+        console.error(error);$('connectionState').textContent='🔴 Firebase read error';
+        showMessage('Cannot read orders. Check Firestore rules, connectivity, and whether order documents have createdAt fields. '+error.message,'error');
+      });
+
+      unsubscribeCategories=db.collection('categories').onSnapshot(snapshot=>{
+        categories=snapshot.docs.map(doc=>({docId:doc.id,data:doc.data()})).sort((a,b)=>safeText(a.data.name).localeCompare(safeText(b.data.name)));
+        renderCategories();renderProducts();
+      },error=>{console.error(error);showMessage('Cannot read categories. Check Firestore rules. '+error.message,'error');});
+      unsubscribeProducts=db.collection('products').onSnapshot(snapshot=>{
+        products=snapshot.docs.map(doc=>({docId:doc.id,data:doc.data()})).sort((a,b)=>safeText(a.data.name).localeCompare(safeText(b.data.name)));
+        renderProducts();
+      },error=>{console.error(error);showMessage('Cannot read products. Check Firestore rules. '+error.message,'error');});
+      unsubscribeSettings=db.collection('settings').doc('restaurant').onSnapshot(doc=>{
+        if(doc.exists)renderSettings(doc.data());else renderSettings({restaurantName:'E.M Restaurant',currencySymbol:'₦'});
+      },error=>{console.error(error);showMessage('Cannot read settings. Check Firestore rules. '+error.message,'error');});
+    }
+
+    $('orderSearch').addEventListener('input',renderOrders);
+    $('customerSearch').addEventListener('input',renderCustomers);
+    initChart();
+
+    function setLoginStatus(message, isError=false) {
+      const el = $('loginStatus');
+      el.textContent = message || '';
+      el.style.color = isError ? '#b71c1c' : '#555';
+    }
+    $('loginForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const email = $('loginEmail').value.trim();
+      const password = $('loginPassword').value;
+      $('loginButton').disabled = true;
+      setLoginStatus('Signing in…');
+      try {
+        await auth.signInWithEmailAndPassword(email, password);
+        // Auth observer below verifies the UID before opening the dashboard.
+      } catch (error) {
+        console.error(error);
+        setLoginStatus('Sign-in failed. Check the email/password and ensure Email/Password is enabled in Firebase Authentication.', true);
+      } finally { $('loginButton').disabled = false; }
+    });
+    $('resetPasswordButton').addEventListener('click', async () => {
+      const email = $('loginEmail').value.trim();
+      if (!email) return setLoginStatus('Enter your administrator email first.', true);
+      try {
+        await auth.sendPasswordResetEmail(email);
+        setLoginStatus('If this email belongs to an account, Firebase will send a password reset email.');
+      } catch (error) {
+        console.error(error);
+        setLoginStatus('Could not send reset email. Check the address and Firebase Authentication settings.', true);
+      }
+    });
+    $('signOutButton').addEventListener('click', async () => {
+      try { await auth.signOut(); } catch (error) { console.error(error); showMessage('Sign out failed: ' + error.message, 'error'); }
+    });
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        $('dashboardShell').classList.add('hidden');
+        $('loginScreen').classList.remove('hidden');
+        $('signedInEmail').textContent = '';
+        listenersStarted = false;
+        [unsubscribeOrders, unsubscribeCategories, unsubscribeProducts, unsubscribeSettings].forEach(unsub => { if (typeof unsub === 'function') unsub(); });
+        unsubscribeOrders = unsubscribeCategories = unsubscribeProducts = unsubscribeSettings = null;
+        return;
+      }
+      if (!ADMIN_UID || user.uid !== ADMIN_UID) {
+        setLoginStatus('This account is not authorised for the company dashboard. Ask the project administrator to verify the UID in the dashboard code and Firestore Rules.', true);
+        await auth.signOut();
+        return;
+      }
+      $('loginScreen').classList.add('hidden');
+      $('dashboardShell').classList.remove('hidden');
+      $('signedInEmail').textContent = user.email || 'Administrator';
+      setLoginStatus('');
+      if (!listenersStarted) {
+        listenersStarted = true;
+        startListeners();
+      }
+    });
+
+    // Avoid leaking realtime listeners if this page is later embedded in a single-page shell.
+    window.addEventListener('beforeunload',()=>{
+      [unsubscribeOrders,unsubscribeCategories,unsubscribeProducts,unsubscribeSettings].forEach(unsub=>{if(typeof unsub==='function')unsub();});
+      if(ordersChart)ordersChart.destroy();
+    });
+  </script>
+</body>
+</html>
