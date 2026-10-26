@@ -1,0 +1,16 @@
+{
+  "name": "em-restaurant",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "serve": "firebase emulators:start --only hosting",
+    "test:rules": "firebase emulators:exec --only firestore \"node tests/rules.test.mjs\"",
+    "deploy": "firebase deploy --only hosting",
+    "deploy:rules": "firebase deploy --only firestore:rules"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
+    "firebase": "^12.19.0",
+    "firebase-tools": "^15.34.1"
+  }
+}

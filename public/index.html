@@ -161,12 +161,12 @@
   <script>
     // Keep this Firebase project configuration aligned with the Quickzu dashboard.
     const firebaseConfig = {
-      apiKey: "AIzaSyCTBS0iIHqo1SaF8482oQepvVAu2ReSs7w",
+      apiKey: "AIzaSyCTBS0iiHqo1SaF8402oQapvVAu2ReSs7w",
       authDomain: "quickzu-app.firebaseapp.com",
       projectId: "quickzu-app",
       storageBucket: "quickzu-app.firebasestorage.app",
       messagingSenderId: "459582558032",
-      appId: "1:459582558032:web:a6638cb82701049a03e655",
+      appId: "1:459582558032:web:e6638cb82701049a03e655",
       measurementId: "G-5H1Y50TWL2"
     };
 
@@ -366,14 +366,12 @@
         address: notes,
         items: cart.map(item => `${item.name} x ${item.qty}`),
         time: timeString,
-        status: payMode === 'Paid Online' ? 'paid' : 'pending',
+        // Customers cannot confirm their own payment; staff mark orders as paid from the dashboard.
+        status: 'pending',
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       };
 
       try {
-      console.log("Signed-in user:", auth.currentUser);
-console.log("Order ownerUid:", newOrder.ownerUid);
-console.log("Order data:", newOrder);
         const docRef = await db.collection('orders').add(newOrder);
         document.getElementById('trackerOrderId').textContent = `Order Tracker: ${newOrder.orderId}`;
         document.getElementById('trackerCard').style.display = 'block';
