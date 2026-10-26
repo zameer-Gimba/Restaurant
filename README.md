@@ -38,7 +38,8 @@ There is no server code. Both pages talk directly to Firebase:
 ## Automatic publishing
 
 Every change pushed to the `main` branch on GitHub is published to the live site automatically
-(see `.github/workflows/deploy.yml`; progress is shown in the repo's **Actions** tab).
+(see `.github/workflows/deploy.yml`, which runs `scripts/deploy-hosting.mjs`; progress is shown in the
+repo's **Actions** tab).
 This needs a one-time GitHub secret named `FIREBASE_SERVICE_ACCOUNT` containing a Firebase
 service account key (Firebase console → Project settings → Service accounts → Generate new private key).
 
