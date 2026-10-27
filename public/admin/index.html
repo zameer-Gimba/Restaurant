@@ -31,6 +31,14 @@
     .panel-header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:15px;padding-bottom:10px;border-bottom:2px solid #f0f0f0}
     .panel-title{font-size:1.1rem;font-weight:700;color:var(--primary)}
     .chart-box{width:100%;height:340px;position:relative}
+    .range-tabs{display:inline-flex;gap:4px;background:#eef0f7;border-radius:10px;padding:4px;margin:4px 0 12px}
+    .range-tabs button{background:transparent;color:#555;padding:7px 14px}
+    .range-tabs button.active{background:#fff;color:var(--primary);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+    .day-details{margin-top:14px;padding:14px;border:1px solid var(--border);border-radius:8px;background:#fafbff}
+    .day-details h3{font-size:1rem;margin-bottom:10px;color:var(--primary)}
+    .day-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px}
+    .day-stat{background:#fff;border:1px solid var(--border);border-radius:7px;padding:10px}
+    .day-stat .stat-value{font-size:1.15rem;color:var(--text)}
     .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0}
     input,select,textarea{border:1px solid #cfd3da;border-radius:7px;padding:10px 11px;background:#fff;color:var(--text);font-size:.92rem;max-width:100%;width:100%}
     textarea{min-height:90px;resize:vertical}
@@ -114,9 +122,15 @@
 
     <section id="dashboardView" class="view-section active">
       <div class="panel">
-        <div class="panel-header"><span class="panel-title">📊 Orders by Hour (Today)</span><span id="connectionState" class="small muted">Connecting to Firebase…</span></div>
-        <p class="muted small">Counts are calculated from each order's <code>createdAt</code> timestamp for today, using your browser's local time.</p>
+        <div class="panel-header"><span class="panel-title">📊 Daily Orders</span><span id="connectionState" class="small muted">Connecting to Firebase…</span></div>
+        <p class="muted small">Number of orders received each day. Tap a bar to see that day's orders and sales.</p>
+        <div class="range-tabs" id="chartRange" role="group" aria-label="Chart period">
+          <button type="button" data-days="14">14 Days</button>
+          <button type="button" data-days="30" class="active">30 Days</button>
+          <button type="button" data-days="60">60 Days</button>
+        </div>
         <div class="chart-box"><canvas id="ordersBarChart"></canvas></div>
+        <div id="dayDetails" class="day-details"></div>
       </div>
       <div class="panel"><div class="panel-header"><span class="panel-title">Recent Orders</span><button class="btn-light btn-small" data-goto="ordersView">Open orders</button></div><div id="recentOrders" class="item-grid"><div class="empty">Waiting for orders…</div></div></div>
     </section>
@@ -298,30 +312,92 @@
     }
     function getOrderId(order, docId) { return safeText(order.orderId, docId || '—'); }
 
+    // Daily orders chart: one bar per day for the last 14/30/60 days, in the browser's local time.
+    let chartDays = 30;
+    let chartDayKeys = [];
+    let selectedDayKey = null;
+    const dayKey = (date) => date.getFullYear() + '-' + String(date.getMonth()+1).padStart(2,'0') + '-' + String(date.getDate()).padStart(2,'0');
+    function lastDays(count) {
+      const today = new Date(); today.setHours(0,0,0,0);
+      return Array.from({length:count}, (_, i) => { const d = new Date(today); d.setDate(today.getDate() - (count - 1 - i)); return d; });
+    }
+    function ordersOnDay(key) {
+      return allOrders.filter(({data}) => { const d = orderDate(data); return d && dayKey(d) === key; });
+    }
     function initChart() {
       const canvas = $('ordersBarChart');
       if (!canvas || typeof Chart === 'undefined') {
         $('connectionState').textContent = 'Chart library unavailable';
         return;
       }
-      const labels = Array.from({length:24}, (_, hour) => String(hour).padStart(2,'0') + ':00');
       ordersChart = new Chart(canvas.getContext('2d'), {
         type:'bar',
-        data:{labels, datasets:[{label:'Orders today',data:Array(24).fill(0),backgroundColor:'rgba(26,35,126,.85)',borderColor:'#1a237e',borderWidth:1,borderRadius:4}]},
-        options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,ticks:{stepSize:1}}},plugins:{legend:{display:true}}}
+        data:{labels:[], datasets:[{label:'Orders',data:[],backgroundColor:[],borderRadius:3}]},
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          interaction:{mode:'index', intersect:false},
+          scales:{y:{beginAtZero:true,ticks:{precision:0}}, x:{grid:{display:false},ticks:{autoSkip:true,maxRotation:0,maxTicksLimit:8}}},
+          plugins:{legend:{display:false}, tooltip:{callbacks:{label:item => item.parsed.y + (item.parsed.y === 1 ? ' order' : ' orders')}}},
+          // Tapping anywhere in a day's column selects that day, so thin bars are easy to hit on phones.
+          onClick:(event, _elements, chart) => {
+            const hit = chart.getElementsAtEventForMode(event, 'index', {intersect:false}, false);
+            if (!hit.length) return;
+            selectedDayKey = chartDayKeys[hit[0].index];
+            updateChart();
+          }
+        }
       });
     }
     function updateChart() {
-      if (!ordersChart) return;
-      const counts = Array(24).fill(0);
-      const now = new Date();
-      allOrders.forEach(({data}) => {
-        const date = orderDate(data);
-        if (date && date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate()) counts[date.getHours()]++;
-      });
-      ordersChart.data.datasets[0].data = counts;
-      ordersChart.update();
+      const days = lastDays(chartDays);
+      chartDayKeys = days.map(dayKey);
+      if (!selectedDayKey || !chartDayKeys.includes(selectedDayKey)) selectedDayKey = chartDayKeys[chartDayKeys.length - 1];
+      if (ordersChart) {
+        const counts = Object.fromEntries(chartDayKeys.map(key => [key, 0]));
+        allOrders.forEach(({data}) => { const d = orderDate(data); if (d && dayKey(d) in counts) counts[dayKey(d)]++; });
+        ordersChart.data.labels = days.map(d => d.toLocaleDateString('en-GB', {day:'numeric', month:'short'}));
+        ordersChart.data.datasets[0].data = chartDayKeys.map(key => counts[key]);
+        ordersChart.data.datasets[0].backgroundColor = chartDayKeys.map(key => key === selectedDayKey ? '#e65100' : 'rgba(26,35,126,.85)');
+        ordersChart.update();
+      }
+      renderDayDetails();
     }
+    function renderDayDetails() {
+      const box = $('dayDetails'); box.replaceChildren();
+      if (!selectedDayKey) return;
+      const [y, m, d] = selectedDayKey.split('-').map(Number);
+      const date = new Date(y, m - 1, d);
+      const isToday = selectedDayKey === dayKey(new Date());
+      const orders = ordersOnDay(selectedDayKey);
+      const cancelled = orders.filter(({data}) => normalStatus(data) === 'cancelled').length;
+      const sales = orders.filter(({data}) => normalStatus(data) !== 'cancelled').reduce((sum, {data}) => sum + Number(data.amount || 0), 0);
+
+      const title = document.createElement('h3');
+      title.textContent = (isToday ? 'Today · ' : '') + date.toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+      box.appendChild(title);
+      const stats = document.createElement('div'); stats.className = 'day-stats';
+      [['Orders', String(orders.length)], ['Sales', money(sales)], ['Cancelled', String(cancelled)]].forEach(([label, value]) => {
+        const card = document.createElement('div'); card.className = 'day-stat';
+        const l = document.createElement('div'); l.className = 'stat-label'; l.textContent = label;
+        const v = document.createElement('div'); v.className = 'stat-value'; v.textContent = value;
+        card.append(l, v); stats.appendChild(card);
+      });
+      box.appendChild(stats);
+      const note = document.createElement('p'); note.className = 'muted small'; note.style.marginBottom = '10px';
+      note.textContent = 'Sales add up every order that was not cancelled, including orders still waiting for payment.';
+      box.appendChild(note);
+      const list = document.createElement('div'); list.className = 'item-grid';
+      if (!orders.length) { const e = document.createElement('div'); e.className = 'empty'; e.textContent = 'No orders on this day.'; list.appendChild(e); }
+      orders.forEach(({data, docId}) => list.appendChild(createOrderCard(data, docId, true)));
+      box.appendChild(list);
+    }
+    $('chartRange').addEventListener('click', event => {
+      const button = event.target.closest('button[data-days]');
+      if (!button) return;
+      chartDays = Number(button.dataset.days);
+      document.querySelectorAll('#chartRange button').forEach(b => b.classList.toggle('active', b === button));
+      updateChart();
+    });
 
     function createOrderCard(order, docId, compact=false) {
       const card = document.createElement('article');

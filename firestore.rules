@@ -1,60 +1,81 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Must match ADMIN_UID in public/admin/index.html.
     function isAdmin() {
-      return request.auth != null && request.auth.uid == 'AaO71KqiEtYpivEEMOfkbQH31i63';
+      return request.auth != null
+        && request.auth.uid == 'AaO71KqiEtYpivEEMOfkbQH31i63';
     }
 
-    function isString(field, maxLen) {
-      return request.resource.data[field] is string
-        && request.resource.data[field].size() <= maxLen;
-    }
-
-    // Shape of an order written by public/index.html.
-    function isValidNewOrder() {
-      let d = request.resource.data;
-      return d.keys().hasOnly(['orderId', 'customerName', 'phone', 'type', 'amount',
-                               'payMode', 'address', 'items', 'time', 'status', 'createdAt'])
-        && d.keys().hasAll(['customerName', 'phone', 'type', 'amount', 'items', 'status', 'createdAt'])
-        && isString('customerName', 100) && d.customerName.size() > 0
-        && isString('phone', 30) && d.phone.size() > 0
-        && d.type in ['TAKE AWAY', 'DELIVERY', 'DINE IN']
-        && d.amount is number && d.amount > 0 && d.amount <= 10000000
-        && d.items is list && d.items.size() > 0 && d.items.size() <= 100
-        && d.status == 'pending'
-        && d.createdAt == request.time
-        && (!('orderId' in d) || isString('orderId', 20))
-        && (!('payMode' in d) || isString('payMode', 40))
-        && (!('address' in d) || isString('address', 300))
-        && (!('time' in d) || isString('time', 40));
-    }
-
-    // Menu and restaurant settings: public to read, admin-only to change.
-    match /products/{productId} {
+    match /categories/{id} {
       allow read: if true;
       allow write: if isAdmin();
     }
-    match /categories/{categoryId} {
+
+    match /products/{id} {
       allow read: if true;
       allow write: if isAdmin();
     }
-    match /settings/{settingId} {
+
+    match /settings/restaurant {
       allow read: if true;
       allow write: if isAdmin();
+    }
+
+    match /Customers/{id} {
+      allow read, write: if isAdmin();
     }
 
     match /orders/{orderId} {
-      // Customers place orders, and can follow one order by its (random, unguessable) document ID.
-      allow create: if isAdmin() || isValidNewOrder();
-      allow get: if true;
-      // Only the admin can see the full list of orders (customer names and phone numbers) or change them.
-      allow list, update, delete: if isAdmin();
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasAll([
+          'ownerUid', 'orderId', 'customerName', 'phone',
+          'type', 'amount', 'payMode', 'address',
+          'items', 'time', 'status', 'createdAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'ownerUid', 'orderId', 'customerName', 'phone',
+          'type', 'amount', 'payMode', 'address',
+          'items', 'time', 'status', 'createdAt'
+        ])
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.orderId is string
+        && request.resource.data.customerName is string
+        && request.resource.data.customerName.size() > 0
+        && request.resource.data.customerName.size() <= 120
+        && request.resource.data.phone is string
+        && request.resource.data.phone.size() <= 40
+        && request.resource.data.type is string
+        && request.resource.data.type.size() <= 40
+        && request.resource.data.amount is number
+        && request.resource.data.amount >= 0
+        && request.resource.data.amount <= 100000000
+        && request.resource.data.payMode is string
+        && request.resource.data.payMode.size() <= 50
+        && request.resource.data.address is string
+        && request.resource.data.address.size() <= 500
+        && request.resource.data.items is list
+        && request.resource.data.items.size() > 0
+        && request.resource.data.items.size() <= 50
+        && request.resource.data.time is string
+        && request.resource.data.time.size() <= 100
+        && request.resource.data.status == 'pending'
+        && request.resource.data.createdAt == request.time;
+
+      allow read: if isAdmin()
+        || (request.auth != null
+            && resource.data.ownerUid == request.auth.uid);
+
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data)
+          .affectedKeys().hasOnly(['status'])
+        && request.resource.data.status in [
+          'pending', 'paid', 'accepted', 'done', 'cancelled'
+        ];
+
+      allow delete: if false;
     }
 
-    // Anything else is closed.
     match /{document=**} {
       allow read, write: if false;
     }

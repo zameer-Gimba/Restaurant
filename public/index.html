@@ -131,8 +131,8 @@
       </div>
 
       <form class="checkout-form" id="orderForm">
-        <input type="text" id="customerName" placeholder="Full Name" autocomplete="name" required>
-        <input type="tel" id="customerPhone" placeholder="Phone Number (e.g., 08012345678)" autocomplete="tel" required>
+        <input type="text" id="customerName" placeholder="Full Name" autocomplete="name" maxlength="120" required>
+        <input type="tel" id="customerPhone" placeholder="Phone Number (e.g., 08012345678)" autocomplete="tel" maxlength="40" required>
         <select id="orderType" required>
           <option value="TAKE AWAY">Take Away (No Fee)</option>
           <option value="DELIVERY">Delivery (+₦1,000 Delivery Fee)</option>
@@ -142,7 +142,7 @@
           <option value="Pay mode paylater">Pay Later (Cash on Pick-up/Delivery)</option>
           <option value="Paid Online">Paid Online</option>
         </select>
-        <input type="text" id="customerNotes" placeholder="Delivery Address or Table Number" required>
+        <input type="text" id="customerNotes" placeholder="Delivery Address or Table Number" maxlength="500" required>
         <button type="submit" class="order-btn" id="submitBtn">Place Order Now</button>
       </form>
       <div id="formMessage" class="message" role="status" aria-live="polite"></div>
@@ -162,6 +162,7 @@
 
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script>
     // Keep this Firebase project configuration aligned with the Quickzu dashboard.
     const firebaseConfig = {
@@ -176,6 +177,20 @@
 
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    // Firestore Rules only accept orders from a signed-in user whose uid matches the order's ownerUid,
+    // so customers are signed in as anonymous guests (no login screen).
+    let guestSignIn = null;
+    function ensureGuest() {
+      if (auth.currentUser) return Promise.resolve(auth.currentUser);
+      if (!guestSignIn) {
+        guestSignIn = auth.signInAnonymously()
+          .then(credential => credential.user)
+          .catch(error => { guestSignIn = null; throw error; });
+      }
+      return guestSignIn;
+    }
 
     const menuSections = document.getElementById('menuSections');
     const menuStatus = document.getElementById('menuStatus');
@@ -376,6 +391,8 @@
       };
 
       try {
+        const user = await ensureGuest();
+        newOrder.ownerUid = user.uid;
         const docRef = await db.collection('orders').add(newOrder);
         document.getElementById('trackerOrderId').textContent = `Order Tracker: ${newOrder.orderId}`;
         document.getElementById('trackerCard').style.display = 'block';
@@ -483,6 +500,8 @@
 
     loadRestaurantSettings();
     loadMenu();
+    // Sign in early so placing an order is quick; handlePlaceOrder retries if this fails.
+    ensureGuest().catch(error => console.warn('Guest sign-in failed:', error));
     updateCartUI();
   </script>
 </body>
