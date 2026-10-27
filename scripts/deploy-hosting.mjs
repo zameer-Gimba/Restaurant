@@ -55,6 +55,13 @@ const config = {};
 if (hosting.cleanUrls) config.cleanUrls = true;
 if (hosting.trailingSlash === false) config.trailingSlashBehavior = 'REMOVE';
 if (hosting.trailingSlash === true) config.trailingSlashBehavior = 'ADD';
+// firebase.json "source" globs map to the API's "glob" field.
+if (hosting.headers) {
+  config.headers = hosting.headers.map(rule => ({
+    glob: rule.source,
+    headers: Object.fromEntries(rule.headers.map(h => [h.key, h.value])),
+  }));
+}
 
 const version = await call('POST', `${API}/sites/${SITE}/versions`, { config });
 const populated = await call('POST', `${API}/${version.name}:populateFiles`, { files });
